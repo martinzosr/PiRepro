@@ -1,0 +1,15 @@
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE PL_Gender_List (GenderID Integer primary key autoincrement, Name TEXT not null, unique(Name) on conflict fail);
+INSERT INTO "PL_Gender_List" VALUES(1,'Rock');
+CREATE TABLE PL_Artist (ArtistID Integer primary key autoincrement, Name TEXT not null, unique(Name) on conflict fail);
+INSERT INTO "PL_Artist" VALUES(1,'Test');
+CREATE TABLE PL_Album (AlbumID Integer primary key autoincrement, Name TEXT not null, DiscNumber INTEGER, Year INTEGER, Artist INTEGER, Gender INTEGER, FOREIGN KEY(Artist) REFERENCES PL_Artist(ArtistID), FOREIGN KEY(Gender) REFERENCES PL_Gender_List(GenderID), unique(Name) on conflict fail);
+INSERT INTO "PL_Album" VALUES(1,'Teest',3,2002,1,1);
+CREATE TABLE PL_Song (SongID Integer primary key autoincrement, Name TEXT not null, TracNumber INTEGER, Artist INTEGER, Album INTEGER, FOREIGN KEY(Artist) REFERENCES PL_Artist(ArtistID), FOREIGN KEY(Album) REFERENCES PL_Album(AlbumID), unique(Name) on conflict fail);
+DELETE FROM sqlite_sequence;
+INSERT INTO "sqlite_sequence" VALUES('PL_Gender_List',1);
+INSERT INTO "sqlite_sequence" VALUES('PL_Artist',1);
+INSERT INTO "sqlite_sequence" VALUES('PL_Album',1);
+COMMIT;
+
