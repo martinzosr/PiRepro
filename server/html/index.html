@@ -19,28 +19,36 @@
 	    <div class="col-lg-12">
           <div class="panel panel-default controlPanel">
 	        <div class="panel-body">
-			  <div class="btn-group" role="group">
-			    <a class="btn btn-default" href="cmd/nextSong">Next song</a>
-			    <a class="btn btn-default" href="cmd/volDown">Volume down</a>
-			    <a class="btn btn-default" href="cmd/volUp">Volume up</a>
-			    <a class="btn btn-default" href="cmd/shutDown">Exit</a>
-	          </div>
+				<h1>PiRepro</h1>
 	        </div>
 	      </div>
 	    </div>
 	  </div>
 	  <div class="row">
         <div class="col-lg-4">
-			<div class="panel panel-default">
-			  <div class="panel-heading">
-				Actual queue
-			  </div>
-			  <div class="panel-body">
-				{queueData}
+		  <div class="panel panel-default">
+			<div class="panel-heading">
+			  Actual queue
+			</div>
+		  <div class="panel-body">
+			{queueData}
+		  </div>
+		</div>
+	  </div>
+	    <div class="col-lg-8">
+		  <div class="row">
+			  <div class="panel panel-default controlPanel">
+				<div class="panel-body">
+				  <div class="btn-group" role="group">
+					<a class="btn btn-default" href="cmd/nextSong">Next song</a>
+					<a class="btn btn-default" href="cmd/volDown">Volume down</a>
+					<a class="btn btn-default" href="cmd/volUp">Volume up</a>
+					<a class="btn btn-default" href="cmd/shutDown">Exit</a>
+				  </div>
+				</div>
 			  </div>
 			</div>
-	    </div>
-	    <div class="col-lg-8">
+		  <div class="row">
 			<div class="panel panel-default">
 			  <div class="panel-heading">
 				Folders
@@ -52,6 +60,7 @@
 				{folderData}
 			  </div>
 			</div>
+		  </div>
 	    </div>
 	  </div>
 	</div>
