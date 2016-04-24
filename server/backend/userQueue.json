@@ -1,0 +1,19 @@
+{
+	"songs": [
+		{
+			"id": "112",
+			"name": "song2",
+			"duration": "3:11"
+		},
+		{
+			"id": "203321232",
+			"name": "song",
+			"duration": "3:41"
+		},
+		{
+			"id": "20342",
+			"name": "song4",
+			"duration": "3:21"
+		}
+	]
+}
