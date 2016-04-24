@@ -205,10 +205,11 @@ class Backdoor {
 
 	public function addSongToPlaylist($tokken, $playlistId, $songId) {
 		$userId = $this->getIdFromTokken($tokken);
-		$sql = "SET @newprior = (SELECT max(`PSR_Priority`) + 10 FROM US_PlaylistSongRelation WHERE `PSR_Playlist` = '$playlistId'); INSERT INTO `pirepro`.`US_PlaylistSongRelation` (`PSR_Id`, `PSR_Playlist`, `PSR_Song`, `PSR_Priority`) VALUES (NULL, '$playlistId', '$songId', @newprior); ";
-		if (isOwnerPlaylist($tokken, $id) && $this->con->query($sql)) {
+		$sql = "SET @newprior = (SELECT max(`PSR_Priority`) + 10 FROM US_PlaylistSongRelation WHERE `PSR_Playlist` = '$playlistId');\n INSERT INTO `pirepro`.`US_PlaylistSongRelation` (`PSR_Id`, `PSR_Playlist`, `PSR_Song`, `PSR_Priority`) VALUES (NULL, '$playlistId', '$songId', @newprior); ";
+		if ($this->isOwnerPlaylist($tokken, $playlistId) && $this->con->multi_query($sql)) {
 			return True;
 		} else {
+			echo $this->con->error;
 			return False;
 		}
 	}

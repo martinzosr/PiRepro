@@ -75,8 +75,7 @@ var ChoosePlaylist = React.createClass({
 			type: "POST",
 			headers: {"tokken":localStorage.getItem("tokken")},
 			success: function(resultData) {
-				var res = JSON.parse(resultData);
-				tthis.setState({playlists: res});
+				var res = JSON.parse(resultData);			tthis.setState({playlists: res});
 				tthis.setButtonName();
 			},
 			error : function(jqXHR, textStatus, errorThrown) {
@@ -136,6 +135,7 @@ var ChoosePlaylist = React.createClass({
 		}
 		for (var i = 0; i < this.state.playlists.length; i++){
 			if(this.state.playlists[i].PL_Actual == 1){
+				localStorage.setItem("actualPlaylistId", this.state.playlists[i].PL_Id);
 				this.setState({activeId: this.state.playlists[i].PL_Id, activeName: this.state.playlists[i].PL_Name});
 				this.props.handleChange(this.state.activeId);
 				return;

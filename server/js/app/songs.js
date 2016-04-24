@@ -49,7 +49,24 @@ var SongTable = React.createClass({
 });
 
 var SongLines = React.createClass({
+	addToPlaylist: function(songId){
+		if(!!localStorage.getItem("actualPlaylistId")){
+			var tthis = this;
+			jQuery.ajax({
+				url: "/backend/addSongToPlaylist.php?playlistId=" + localStorage.getItem("actualPlaylistId") + "&songId=" + songId,
+				type: "GET",
+				contentType: 'application/json; charset=utf-8',
+				success: function(resultData) {
+				},
+				error : function(jqXHR, textStatus, errorThrown) {
+					console.log(textStatus);
+				},
+				timeout: 120000,
+			});
+		}
+	},
 	render: function() {
+		var tthis = this;
 		console.log(this.props.data);
 		if(this.props.data==[]){
 			return (<div>loading</div>);
@@ -57,9 +74,10 @@ var SongLines = React.createClass({
 		return (
 			<tbody>
 				{this.props.data.map(function(song){
+					let boundAdd = tthis.addToPlaylist.bind(null, song.SO_Id);
 					return (
 						<tr>
-							<td>{song.SO_Name}</td><td>{secondsToTime(song.SO_Duration)}</td><td>{song.AR_Name }</td><td>{song.AL_Name }</td><td>{song.AL_Year }</td><td>{song.GE_Name}</td><td><a className="btn btn-default btn-xs" href="#">+</a></td>
+							<td>{song.SO_Name}</td><td>{secondsToTime(song.SO_Duration)}</td><td>{song.AR_Name }</td><td>{song.AL_Name }</td><td>{song.AL_Year }</td><td>{song.GE_Name}</td><td><a className="btn btn-default btn-xs" onClick={boundAdd} href="#">+</a></td>
 						</tr>
 					);
 				})}
