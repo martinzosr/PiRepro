@@ -1,19 +1,53 @@
 var UserPlaylist = React.createClass({
+	songUp(songId){
+		var tthis = this;
+		jQuery.ajax({
+			url: "/backend/changeSongPriorityUp.php?songId=" + songId,
+			type: "GET",
+			headers: {"tokken":localStorage.getItem("tokken")},
+			contentType: 'application/json; charset=utf-8',
+			success: function(resultData) {
+				tthis.props.reload(tthis.props.activeId);
+			},
+			error : function(jqXHR, textStatus, errorThrown) {
+				console.log(textStatus);
+			},
+			timeout: 120000,
+		});
+	},
+	songDown(songId){
+		var tthis = this;
+		jQuery.ajax({
+			url: "/backend/changeSongPriorityDown.php?songId=" + songId,
+			type: "GET",
+			headers: {"tokken":localStorage.getItem("tokken")},
+			contentType: 'application/json; charset=utf-8',
+			success: function(resultData) {
+				tthis.props.reload(tthis.props.activeId);
+			},
+			error : function(jqXHR, textStatus, errorThrown) {
+				console.log(textStatus);
+			},
+			timeout: 120000,
+		});
+	},
 	render: function() {
-		console.log((typeof this.props.data) + (typeof []));
 		if(this.props.data==[]){
 			return (<div>loading</div>);
 		}
+		var tthis = this;
 		return (
 			<ul className="list-group">
 				{this.props.data.map(function(song){
+					let boundup = tthis.songDown.bind(null, song.SO_Id);
+					let bounddown = tthis.songUp.bind(null, song.SO_Id);
 					return (
 						<div className="list-group-item">
 							<a href={song.SO_Id}>
 								{song.SO_Name}
 							</a>
-							<button className="btn btn-default btn-xs pull-right"> <span className="glyphicon glyphicon-menu-up" aria-hidden="true"></span> </button>
-							<button className="btn btn-default btn-xs pull-right"> <span className="glyphicon glyphicon-menu-down" aria-hidden="true"></span> </button>
+							<button className="btn btn-default btn-xs pull-right" onClick={boundup}> <span className="glyphicon glyphicon-menu-up" aria-hidden="true"></span> </button>
+							<button className="btn btn-default btn-xs pull-right" onClick={bounddown}> <span className="glyphicon glyphicon-menu-down" aria-hidden="true"></span> </button>
 							<span className="badge">
 								{secondsToTime(song.SO_Duration)}
 							</span>
@@ -30,6 +64,7 @@ var PlaylistPanel = React.createClass({
 	reload(id){
 		var tthis = this;
 		if(!!id){
+			tthis.setState({activeId:id});
 			jQuery.ajax({
 				url: "/backend/getPlaylistInfo.php?id=" + id,
 				type: "GET",
@@ -59,7 +94,7 @@ var PlaylistPanel = React.createClass({
 				</div>
 				<div className="panel-body">
 					<ChoosePlaylist handleChange={this.handlePlaylistChange}/>
-					<UserPlaylist data={this.state.data}/>
+					<UserPlaylist reload={this.reload} activeId={this.state.activeId} data={this.state.data}/>
 				</div>
 			</div>
 		);
@@ -135,7 +170,6 @@ var ChoosePlaylist = React.createClass({
 		}
 		for (var i = 0; i < this.state.playlists.length; i++){
 			if(this.state.playlists[i].PL_Actual == 1){
-				localStorage.setItem("actualPlaylistId", this.state.playlists[i].PL_Id);
 				this.setState({activeId: this.state.playlists[i].PL_Id, activeName: this.state.playlists[i].PL_Name});
 				this.props.handleChange(this.state.activeId);
 				return;

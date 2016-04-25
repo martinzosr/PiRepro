@@ -53,7 +53,7 @@ var SongLines = React.createClass({
 		if(!!localStorage.getItem("actualPlaylistId")){
 			var tthis = this;
 			jQuery.ajax({
-				url: "/backend/addSongToPlaylist.php?playlistId=" + localStorage.getItem("actualPlaylistId") + "&songId=" + songId,
+				url: "/backend/addSongToPlaylist.php?&songId=" + songId,
 				type: "GET",
 				contentType: 'application/json; charset=utf-8',
 				success: function(resultData) {

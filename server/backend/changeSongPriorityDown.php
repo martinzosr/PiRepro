@@ -7,7 +7,7 @@ $db->startConnection();
 
 if (isset($_GET['songId'])){
 	$tokken = getTokkenFromHeader(apache_request_headers());
-	if ($db->addSongToPlaylist($tokken, $_GET['songId'])) {
+	if ($db->songDown($tokken, $_GET['songId'])) {
 		http_response_code1(200);
 	} else {
 	    http_response_code1(500);

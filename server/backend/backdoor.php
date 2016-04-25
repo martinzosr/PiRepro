@@ -150,7 +150,7 @@ class Backdoor {
 	}
 
 	public function getPlaylistInfo($id) {
-        $sql = "SELECT so.`SO_Id`,so.`SO_Name`,so.`SO_Duration` FROM `US_PlaylistSongRelation` AS psr INNER JOIN `PL_Song` AS so ON psr.`PSR_Song` = so.`SO_Id` WHERE psr.`PSR_Playlist` = '$id' ORDER BY psr.`PSR_Priority`;";
+        $sql = "SELECT so.`SO_Id`,so.`SO_Name`,so.`SO_Duration` FROM `US_PlaylistSongRelation` AS psr INNER JOIN `PL_Song` AS so ON psr.`PSR_Song` = so.`SO_Id` WHERE psr.`PSR_Playlist` = '$id' ORDER BY psr.`PSR_Priority` DESC;";
         $res = $this->con->query($sql);
 		$playlists = array();
 		while ($row = $res->fetch_assoc()) {
@@ -203,8 +203,41 @@ class Backdoor {
 		}
 	}
 
-	public function addSongToPlaylist($tokken, $playlistId, $songId) {
+	public function songDown($tokken, $songId) {
 		$userId = $this->getIdFromTokken($tokken);
+		$playlistId = $this->getActivePlaylist($userId);
+		$sql = "SET @upId = (SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Playlist` = '$playlistId' AND `PSR_Priority` = (SELECT min(`PSR_Priority`) FROM `US_PlaylistSongRelation` WHERE `PSR_Priority` > (SELECT `PSR_Priority` FROM US_PlaylistSongRelation WHERE `PSR_Song` = '$songId' AND `PSR_Playlist` = '$playlistId') AND `PSR_Playlist` = '$playlistId'));\n SET @actId = (SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Song`= '$songId' AND `PSR_Playlist` = '$playlistId');
+UPDATE US_PlaylistSongRelation as t1 
+ JOIN US_PlaylistSongRelation as t2
+              ON (t1.`PSR_Id`=@upId AND t2.`PSR_Id`=@actId)  OR (t2.`PSR_Id`=@upId AND t1.`PSR_Id`=@actId)
+	SET t1.`PSR_Priority` = t2.`PSR_Priority`, t2.`PSR_Priority` = t1.`PSR_Priority`; ";
+		if ($this->isOwnerPlaylist($tokken, $playlistId) && $this->con->multi_query($sql)) {
+			return True;
+		} else {
+			echo $this->con->error;
+			return False;
+		}
+	}
+
+	public function songUp($tokken, $songId) {
+		$userId = $this->getIdFromTokken($tokken);
+		$playlistId = $this->getActivePlaylist($userId);
+		$sql = "SET @upId = (SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Playlist` = '$playlistId' AND `PSR_Priority` = (SELECT max(`PSR_Priority`) FROM `US_PlaylistSongRelation` WHERE `PSR_Priority` < (SELECT `PSR_Priority` FROM US_PlaylistSongRelation WHERE `PSR_Song` = '$songId' AND `PSR_Playlist` = '$playlistId') AND `PSR_Playlist` = '$playlistId'));\n SET @actId = (SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Song`= '$songId' AND `PSR_Playlist` = '$playlistId');
+UPDATE US_PlaylistSongRelation as t1 
+ JOIN US_PlaylistSongRelation as t2
+              ON (t1.`PSR_Id`=@upId AND t2.`PSR_Id`=@actId)  OR (t2.`PSR_Id`=@upId AND t1.`PSR_Id`=@actId)
+	SET t1.`PSR_Priority` = t2.`PSR_Priority`, t2.`PSR_Priority` = t1.`PSR_Priority`; ";
+		if ($this->isOwnerPlaylist($tokken, $playlistId) && $this->con->multi_query($sql)) {
+			return True;
+		} else {
+			echo $this->con->error;
+			return False;
+		}
+	}
+
+	public function addSongToPlaylist($tokken, $songId) {
+		$userId = $this->getIdFromTokken($tokken);
+		$playlistId = $this->getActivePlaylist($userId);
 		$sql = "SET @newprior = (SELECT max(`PSR_Priority`) + 10 FROM US_PlaylistSongRelation WHERE `PSR_Playlist` = '$playlistId');\n INSERT INTO `pirepro`.`US_PlaylistSongRelation` (`PSR_Id`, `PSR_Playlist`, `PSR_Song`, `PSR_Priority`) VALUES (NULL, '$playlistId', '$songId', @newprior); ";
 		if ($this->isOwnerPlaylist($tokken, $playlistId) && $this->con->multi_query($sql)) {
 			return True;
@@ -214,6 +247,13 @@ class Backdoor {
 		}
 	}
 
+	public function getActivePlaylist($ownerId){
+		$sql = "SELECT `PL_Id` FROM `US_Playlist` WHERE `PL_Owner` = '$ownerId' AND `PL_Actual` = '1'";
+        $res = $this->con->query($sql);
+        $active = $res->fetch_assoc();
+		return $active['PL_Id'];
+	}
+		
 
     public function sanitize($input) {
         if (is_array($input)) {
@@ -229,6 +269,32 @@ class Backdoor {
         }
         return $output;
     }
+
+
+//SELECT * FROM (SELECT * FROM US_PlaylistSongRelation WHERE `PSR_Priority` = (SELECT min(`PSR_Priority`) FROM `US_PlaylistSongRelation` WHERE `PSR_Priority` > (SELECT `PSR_Priority` FROM US_PlaylistSongRelation WHERE `PSR_Song` = 3 AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2) as t1
+//SELECT *  FROM (SELECT * FROM US_PlaylistSongRelation WHERE `PSR_Song` = 2 AND `PSR_Playlist` = 2);
+
+//SET @upId = SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Priority` = (SELECT min(`PSR_Priority`) FROM `US_PlaylistSongRelation` WHERE `PSR_Priority` > (SELECT `PSR_Priority` FROM US_PlaylistSongRelation WHERE `PSR_Song` = 3 AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2);
+//SET @actId = SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Song`= 3 AND `PSR_Playlist` = 2;
+
+//SET @upId = SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Priority` = (SELECT min(`PSR_Priority`) FROM `US_PlaylistSongRelation` WHERE `PSR_Priority` > (SELECT `PSR_Priority` FROM US_PlaylistSongRelation WHERE `PSR_Song` = 3 AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2);
+//SET @actId = SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Song`= 3 AND `PSR_Playlist` = 2;
+//SELECT * FROM US_PlaylistSongRelation as t1 
+//	JOIN US_PlaylistSongRelation as t2
+//		ON t1.`PSR_Id`=@upId AND t2`PSR_Id`=@actId
+
+//SET @upId = (SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Playlist` = 2 AND `PSR_Priority` = (SELECT min(`PSR_Priority`) FROM `US_PlaylistSongRelation` WHERE `PSR_Priority` > (SELECT `PSR_Priority` FROM US_PlaylistSongRelation WHERE `PSR_Song` = 3 AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2));
+//SET @actId = (SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Song`= 3 AND `PSR_Playlist` = 2);
+//SELECT * FROM US_PlaylistSongRelation as t1 
+//	JOIN US_PlaylistSongRelation as t2
+//		ON (t1.`PSR_Id`=@upId AND t2.`PSR_Id`=@actId)  OR (t2.`PSR_Id`=@upId AND t1.`PSR_Id`=@actId);
+
+//SET @upId = (SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Playlist` = 2 AND `PSR_Priority` = (SELECT min(`PSR_Priority`) FROM `US_PlaylistSongRelation` WHERE `PSR_Priority` > (SELECT `PSR_Priority` FROM US_PlaylistSongRelation WHERE `PSR_Song` = 3 AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2));
+//SET @actId = (SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Song`= 3 AND `PSR_Playlist` = 2);
+//UPDATE US_PlaylistSongRelation as t1 
+//      JOIN US_PlaylistSongRelation as t2
+//              ON (t1.`PSR_Id`=@upId AND t2.`PSR_Id`=@actId)  OR (t2.`PSR_Id`=@upId AND t1.`PSR_Id`=@actId)
+//	SET t1.`PSR_Priority` = t2.`PSR_Priority`, t2.`PSR_Priority` = t1.`PSR_Priority`;
 
 
 }
