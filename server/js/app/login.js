@@ -9,6 +9,12 @@ function isLogged(){
 }
 	
 $("#login").click(function(e) { 
+	event.preventDefault();
+	login($('input[name="username"]').val(), $('input[name="password"]').val());
+}); 
+
+function login(username, password){
+	console.log("TEST");
 	var data = {};
 	data["username"] = $('input[name="username"]').val()
 	data["password"] = $('input[name="password"]').val()
@@ -21,47 +27,42 @@ $("#login").click(function(e) {
 			var res = JSON.parse(resultData);
 			window.localStorage.setItem("tokken", res["tokken"]);
 			window.localStorage.setItem("username", data["username"]);
-			$("a[name='loginButton']").html(data["username"]);
-			console.log("success");
-			$('#logoutButton').show();
-			$(".popup, .overlay").hide(); 
-			$(".button").unbind();
-			$('input[name="username"]').val('')
-			$('input[name="password"]').val('')
+			window.location.replace("/index.html");
 		},
 		error : function(jqXHR, textStatus, errorThrown) {
 			console.log(errorThrown+" "+textStatus);
 		},
 		timeout: 120000,
 	});
+}
+
+$("#register").click(function(e) { 
+	event.preventDefault();
+	registration();
 }); 
+
+function registration(){
+	console.log("TEST");
+	var data = {};
+	data["username"] = $('input[name="newUsername"]').val()
+	data["password"] = $('input[name="newPassword"]').val()
+
+	jQuery.ajax({
+		url: "/backend/registration.php",
+		type: "POST",
+		data: JSON.stringify(data),
+		success: function(resultData) {
+			console.log("TESTETSET");
+			setTimeout(login(data["username"],data["password"]), 1000);
+		},
+		error : function(jqXHR, textStatus, errorThrown) {
+			console.log(errorThrown+" "+textStatus);
+		},
+		timeout: 120000,
+	});
+}
 $("#logoutButton").click(function(e) {
 	localStorage.removeItem("username");
 	localStorage.removeItem("tokken");
-	$("a[name='loginButton']").html("Login");
-	$("#logoutButton").hide();
-	$(".button").click(function(e) {
-		showLogin();
-	}); 
-}); 
-
-function showLogin(){
-	console.log("login up");
-	$("body").append(''); $(".popup").show(); 
-	$(".button").unbind();
-	$(".button").click(function(e) {
-		closeLogin();
-	});
-}
-
-function closeLogin(){
-	$(".popup, .overlay").hide(); 
-	$(".button").unbind();
-	$(".button").click(function(e) {
-		showLogin();
-	});
-}
-
-$(".button").click(function(e) {
-	showLogin();
+	window.location.replace("/registration.html");
 }); 

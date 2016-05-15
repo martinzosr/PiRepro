@@ -5,10 +5,10 @@ ini_set('display_errors', 'on');
 $db = new Backdoor;
 $db->startConnection();
 
-if (isset($_GET['name'])){
+if (isset($_GET['songId'])){
 	$tokken = getTokkenFromHeader(apache_request_headers());
-	$res = $db->addPlaylist($tokken, $_GET['name']);
-	if ($res) {
+	if ($db->removeSongFromPlaylist($tokken, $_GET['songId'])) {
+		http_response_code1(200);
 	} else {
 	    http_response_code1(500);
 	}

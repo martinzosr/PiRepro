@@ -56,7 +56,9 @@ var SongLines = React.createClass({
 				url: "/backend/addSongToPlaylist.php?&songId=" + songId,
 				type: "GET",
 				contentType: 'application/json; charset=utf-8',
+				headers: {"tokken":localStorage.getItem("tokken")},
 				success: function(resultData) {
+					console.log(resultData);
 				},
 				error : function(jqXHR, textStatus, errorThrown) {
 					console.log(textStatus);

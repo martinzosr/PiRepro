@@ -82,6 +82,15 @@ class Backdoor {
             }
     }
 
+	public function registration($username, $password) {
+		$sql = "INSERT INTO `pirepro`.`US_User` (`US_Id`, `US_Username`, `US_Tokken`, `US_Password`, `US_Created`, `US_Admin`) VALUES (NULL, '$username', NULL, SHA1('$password'), NOW(), '0');";
+		if ($this->con->query($sql)) {
+			return True;
+		} else {
+			return False;
+		}
+	}
+
 	public function getSong($songId){
 	$sql = "SELECT * FROM `PL_Song` WHERE `SongID` = '$songId';";
         $res = $this->con->query($sql);
@@ -169,7 +178,6 @@ class Backdoor {
 		  $playlists[] = $row;
 		}
 		return $playlists;	
-		
 	}
 
 	public function getSongs($column, $order) {
@@ -235,10 +243,24 @@ UPDATE US_PlaylistSongRelation as t1
 		}
 	}
 
-	public function addSongToPlaylist($tokken, $songId) {
+	public function removeSongFromPlaylist($tokken, $songId) {
 		$userId = $this->getIdFromTokken($tokken);
 		$playlistId = $this->getActivePlaylist($userId);
-		$sql = "SET @newprior = (SELECT max(`PSR_Priority`) + 10 FROM US_PlaylistSongRelation WHERE `PSR_Playlist` = '$playlistId');\n INSERT INTO `pirepro`.`US_PlaylistSongRelation` (`PSR_Id`, `PSR_Playlist`, `PSR_Song`, `PSR_Priority`) VALUES (NULL, '$playlistId', '$songId', @newprior); ";
+		$sql = "DELETE FROM `US_PlaylistSongRelation` WHERE `PSR_Playlist` = '$playlistId' AND `PSR_Song` = '$songId';";
+		if ($this->isOwnerPlaylist($tokken, $playlistId) && $this->con->multi_query($sql)) {
+			return True;
+		} else {
+			echo $this->con->error;
+			return False;
+		}
+	}
+	public function addSongToPlaylist($tokken, $songId) {
+		$userId = $this->getIdFromTokken($tokken);
+		echo $userId;
+		$playlistId = $this->getActivePlaylist($userId);
+		$sql = "SET @newprior = (SELECT max(`PSR_Priority`) + 10 FROM US_PlaylistSongRelation WHERE `PSR_Playlist` = '$playlistId');\n INSERT INTO `pirepro`.`US_PlaylistSongRelation` (`PSR_Id`, `PSR_Playlist`, `PSR_Song`, `PSR_Priority`) VALUES (NULL, '$playlistId', '$songId', COALESCE(@newprior,10)); ";
+#SET @newprior = (SELECT max(`PSR_Priority`) + 10 FROM US_PlaylistSongRelation WHERE `PSR_Playlist` = '29');# MySQL returned an empty result set (i.e. zero rows). INSERT INTO `pirepro`.`US_PlaylistSongRelation` (`PSR_Id`, `PSR_Playlist`, `PSR_Song`, `PSR_Priority`) VALUES (NULL, '29', '2', COALESCE(@newprior, 10));# 1 row affected.
+		echo $sql;
 		if ($this->isOwnerPlaylist($tokken, $playlistId) && $this->con->multi_query($sql)) {
 			return True;
 		} else {
@@ -248,10 +270,26 @@ UPDATE US_PlaylistSongRelation as t1
 	}
 
 	public function getActivePlaylist($ownerId){
+		echo $ownerId;
 		$sql = "SELECT `PL_Id` FROM `US_Playlist` WHERE `PL_Owner` = '$ownerId' AND `PL_Actual` = '1'";
+		echo $sql;
         $res = $this->con->query($sql);
         $active = $res->fetch_assoc();
 		return $active['PL_Id'];
+	}
+
+
+	//////////////////////////////////////////////////////////////////////////////
+	//Todo - mazat aj z playlistsongrelation, pripadne nemazat a iba flagy
+	public function deleteActivePlaylist($tokken){
+		$userId = $this->getIdFromTokken($tokken);
+		$sql = "DELETE FROM `US_Playlist` WHERE `PL_Owner` = '$userId' AND `PL_Actual` = '1'";
+		echo $sql;
+		if ($this->con->query($sql)) {
+			return True;
+		} else {
+			return False;
+		}
 	}
 		
 
@@ -270,31 +308,87 @@ UPDATE US_PlaylistSongRelation as t1
         return $output;
     }
 
+	public function addGenderPreference($tokken, $genderId) {
+		$userId = $this->getIdFromTokken($tokken);
+		$sql = "INSERT INTO `pirepro`.`US_GenderPreferences` (`GP_Id`, `GP_GenderId`, `GP_UserId`) VALUES (NULL, '$genderId', '$userId');";
+		if ($this->con->query($sql)) {
+			return True;
+		} else {
+			return False;
+		}
+	}
 
-//SELECT * FROM (SELECT * FROM US_PlaylistSongRelation WHERE `PSR_Priority` = (SELECT min(`PSR_Priority`) FROM `US_PlaylistSongRelation` WHERE `PSR_Priority` > (SELECT `PSR_Priority` FROM US_PlaylistSongRelation WHERE `PSR_Song` = 3 AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2) as t1
-//SELECT *  FROM (SELECT * FROM US_PlaylistSongRelation WHERE `PSR_Song` = 2 AND `PSR_Playlist` = 2);
+	public function getGenderList() {
+        $sql = "SELECT `GE_Id` as `Id`, `GE_Name` as `Name` FROM `PL_GenderList` ORDER BY `GE_Name`;";
+        $res = $this->con->query($sql);
+		$genders = array();
+		while ($row = $res->fetch_assoc()) {
+		  $genders[] = $row;
+		}
+		return $genders;	
+	}
 
-//SET @upId = SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Priority` = (SELECT min(`PSR_Priority`) FROM `US_PlaylistSongRelation` WHERE `PSR_Priority` > (SELECT `PSR_Priority` FROM US_PlaylistSongRelation WHERE `PSR_Song` = 3 AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2);
-//SET @actId = SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Song`= 3 AND `PSR_Playlist` = 2;
+	public function deleteUserPreferences($userId) {
+		$sql = "DELETE FROM `US_GenderPreferences` WHERE `GP_UserId` = '$userId';";
+		if ($this->con->query($sql)) {
+			return True;
+		} else {
+			return False;
+		}
+	}
 
-//SET @upId = SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Priority` = (SELECT min(`PSR_Priority`) FROM `US_PlaylistSongRelation` WHERE `PSR_Priority` > (SELECT `PSR_Priority` FROM US_PlaylistSongRelation WHERE `PSR_Song` = 3 AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2);
-//SET @actId = SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Song`= 3 AND `PSR_Playlist` = 2;
-//SELECT * FROM US_PlaylistSongRelation as t1 
-//	JOIN US_PlaylistSongRelation as t2
-//		ON t1.`PSR_Id`=@upId AND t2`PSR_Id`=@actId
+	public function addUserPreference($userId, $data){
+		if($data["id"]!=null){
+			$sql = "INSERT INTO `pirepro`.`US_GenderPreferences` (`GP_Id`, `GP_GenderId`, `GP_UserId`, `GP_Rating`) VALUES (NULL, '".$data["id"]."', '$userId', '".$data["val"]."');";
+			if ($this->con->query($sql)) {
+				return True;
+			} else {
+				return False;
+			}
+		}
+	}
 
-//SET @upId = (SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Playlist` = 2 AND `PSR_Priority` = (SELECT min(`PSR_Priority`) FROM `US_PlaylistSongRelation` WHERE `PSR_Priority` > (SELECT `PSR_Priority` FROM US_PlaylistSongRelation WHERE `PSR_Song` = 3 AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2));
-//SET @actId = (SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Song`= 3 AND `PSR_Playlist` = 2);
-//SELECT * FROM US_PlaylistSongRelation as t1 
-//	JOIN US_PlaylistSongRelation as t2
-//		ON (t1.`PSR_Id`=@upId AND t2.`PSR_Id`=@actId)  OR (t2.`PSR_Id`=@upId AND t1.`PSR_Id`=@actId);
+	public function addUserPreferences($tokken, $data) {
+		$userId = $this->getIdFromTokken($tokken);
+		$result = true;
+		if($this->deleteUserPreferences($userId)){	
+			foreach($data as $value){
+				print_r($value);
+				$result = $result && ($this->addUserPreference($userId, $value));
+			}
+			return $result;
+		} else {
+			return false;
+		}
+	}
 
-//SET @upId = (SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Playlist` = 2 AND `PSR_Priority` = (SELECT min(`PSR_Priority`) FROM `US_PlaylistSongRelation` WHERE `PSR_Priority` > (SELECT `PSR_Priority` FROM US_PlaylistSongRelation WHERE `PSR_Song` = 3 AND `PSR_Playlist` = 2) AND `PSR_Playlist` = 2));
-//SET @actId = (SELECT `PSR_Id` FROM US_PlaylistSongRelation WHERE `PSR_Song`= 3 AND `PSR_Playlist` = 2);
-//UPDATE US_PlaylistSongRelation as t1 
-//      JOIN US_PlaylistSongRelation as t2
-//              ON (t1.`PSR_Id`=@upId AND t2.`PSR_Id`=@actId)  OR (t2.`PSR_Id`=@upId AND t1.`PSR_Id`=@actId)
-//	SET t1.`PSR_Priority` = t2.`PSR_Priority`, t2.`PSR_Priority` = t1.`PSR_Priority`;
+	public function getGenderPreferences($tokken) {
+		$userId = $this->getIdFromTokken($tokken);
+        $sql = "SELECT `GP_GenderId` as 'gender', `GP_Rating` as 'rating' FROM `US_GenderPreferences` WHERE `GP_UserId` = '$userId';";
+        $res = $this->con->query($sql);
+		$preferences = array();
+		while ($row = $res->fetch_assoc()) {
+			$preferences[] = $row;
+		}
+		return $preferences;	
+	}
 
+	public function getGenderPreference($ownerId, $genderId){
+		$sql = "SELECT `GP_Rating` FROM `US_GenderPreferences` WHERE `GP_UserId` = '$userId' AND `GP_GenderId` = '$genderId';";
+		$res = $this->con->query($sql);
+		$active = $res->fetch_assoc();
+		return $active['GP_Rating'];
+	}
 
+	public function isUserAdmin($tokken) {
+		$userId = $this->getIdFromTokken($tokken);
+		$sql = "SELECT * FROM `US_User` WHERE `US_Id` = '$userId' AND `US_Admin` = 1;";
+		echo $sql;
+		$res = $this->con->query($sql);
+		if ($res) {
+			return !($res->num_rows === 0);
+		} else {
+			return False;
+		}
+	}
 }

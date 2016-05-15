@@ -5,13 +5,11 @@ ini_set('display_errors', 'on');
 $db = new Backdoor;
 $db->startConnection();
 
-if (isset($_GET['name'])){
+if (isset($_GET['id'])){
 	$tokken = getTokkenFromHeader(apache_request_headers());
-	$res = $db->addPlaylist($tokken, $_GET['name']);
-	if ($res) {
-	} else {
-	    http_response_code1(500);
-	}
+	$res = $db->getPlaylists($tokken, $_GET['id']);
+	echo json_encode($res);
 }
+
 $db->stopConnection();
 ?>
