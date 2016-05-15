@@ -100,6 +100,9 @@ var PlaylistPanel = React.createClass({
 			this.setState({data:[]});
 		}
 	},
+	reloadWithoutId(){
+		this.reload(this.state.activeId);
+	},
 	getInitialState(){
 		return ({data:[]});
 	},
@@ -124,7 +127,6 @@ var PlaylistPanel = React.createClass({
 
 var ChoosePlaylist = React.createClass({
 	loadPlaylists(){
-		console.log("RELOAD PLAULISTT");
 		var tthis = this;
 		jQuery.ajax({
 			url: "/backend/getPlaylists.php",
@@ -219,7 +221,6 @@ var ChoosePlaylist = React.createClass({
 			success: function(resultData) {
 				tthis.loadPlaylists();
 				tthis.props.handleChange(null);
-				console.log("success");
 			},
 			error : function(jqXHR, textStatus, errorThrown) {
 				console.log(errorThrown+" "+textStatus);
@@ -270,10 +271,6 @@ var ChoosePlaylist = React.createClass({
 	}
 });
 
-ReactDOM.render(
-	<PlaylistPanel />,
-	document.getElementById('playlistPanel')
-);
 
 //////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////
@@ -292,7 +289,7 @@ var SongPanel = React.createClass({
 					Songs
 				</div>
 				<div className="panel-body">
-					<SongTable />
+					<SongTable reload={this.props.reload}/>
 				</div>
 			</div>
 		);
@@ -328,7 +325,7 @@ var SongTable = React.createClass({
 		return (
 			<table className="table table-striped">
 				<SongHeaders columns={this.state.columns}/>
-				<SongLines data={this.state.data} />
+				<SongLines data={this.state.data} reload={this.props.reload}/>
 			</table>
 		)
 	}
@@ -344,7 +341,7 @@ var SongLines = React.createClass({
 				contentType: 'application/json; charset=utf-8',
 				headers: {"tokken":localStorage.getItem("tokken")},
 				success: function(resultData) {
-					console.log(resultData);
+					tthis.props.reload();
 				},
 				error : function(jqXHR, textStatus, errorThrown) {
 					console.log(textStatus);
@@ -390,8 +387,41 @@ var SongHeaders = React.createClass({
 	}
 });
 
+
+
+
+
+
+var PlaylistsSongs = React.createClass({
+	reload(){
+		this.refs.PlaylistPanel.reloadWithoutId();
+	},
+	getInitialState(){
+		return ({foo:1});
+	},
+	render: function() {
+		return (
+		  <div className="row">
+			<div className="col-lg-4">
+				<PlaylistPanel ref='PlaylistPanel'/>
+			</div>
+			<div className="col-lg-8">
+				<SongPanel reload={this.reload}/>
+			</div>
+		  </div>
+		);
+	}
+});
+
+
+
+
+
+
+
 ReactDOM.render(
-	<SongPanel/>,
+	<PlaylistsSongs/>,
 	document.getElementById('content')
 );
+
 
